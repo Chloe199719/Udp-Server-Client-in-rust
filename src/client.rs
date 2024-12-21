@@ -97,6 +97,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 let mut position2 = position.lock().await;
                                 *position2 = player_state.unwrap();
                             }
+                            MessageType::PlayerLeft => {
+                                let player = String::from_utf8(reply.payload).unwrap();
+                                let mut state = server_state.lock().await;
+                                state.players.remove(&player);
+                            }
                         }
                     }
                 }

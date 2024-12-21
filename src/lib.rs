@@ -21,6 +21,7 @@ pub enum MessageType {
     ConnectionInit = 0x04,
     PlayerJoin = 0x05,
     ConfirmPlayerMovement = 0x06,
+    PlayerLeft = 0x07,
 }
 
 impl MessageType {
@@ -32,6 +33,7 @@ impl MessageType {
             0x04 => Some(MessageType::ConnectionInit),
             0x05 => Some(MessageType::PlayerJoin),
             0x06 => Some(MessageType::ConfirmPlayerMovement),
+            0x07 => Some(MessageType::PlayerLeft),
             _ => None,
         }
     }

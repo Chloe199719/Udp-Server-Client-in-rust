@@ -22,6 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Start a task for cleaning up disconnected players
     let cleanup_state = Arc::clone(&state);
+    let cleanup_socket = Arc::clone(&socket);
     task::spawn(async move {
         let interval = time::interval(Duration::from_secs(5));
         tokio::pin!(interval);
@@ -30,6 +31,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             interval.tick().await;
             let mut state = cleanup_state.lock().await;
             let now = Instant::now();
+            let ids_to_remove: Vec<String> = state
+                .players
+                .iter()
+                .filter_map(|(addr, player)| {
+                    if now.duration_since(player.last_heartbeat) > Duration::from_secs(10) {
+                        // println!("Removing inactive player: {}", addr);
+                        Some(addr.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            for id in ids_to_remove {
+                let packet = GamePacket::new(MessageType::PlayerLeft, 0, id.as_bytes().to_vec());
+                let data = packet.serialize();
+                for (addr, _) in &state.players {
+                    if addr != &id {
+                        cleanup_socket.send_to(&data, addr).await.unwrap();
+                    }
+                }
+            }
             state.players.retain(|_addr, player| {
                 if now.duration_since(player.last_heartbeat) > Duration::from_secs(10) {
                     // println!("Removing inactive player: {}", addr);
